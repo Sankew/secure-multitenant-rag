@@ -16,9 +16,18 @@ from .core import SecureService
 from .domain import ACL, Principal
 
 
+CHALLENGE = {"WWW-Authenticate": "Bearer"}
+
+
 class Question(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    question: str = Field(min_length=1, max_length=4000)
+    question: str = Field(max_length=4000, pattern=r"\S")
+
+
+class AnswerBody(BaseModel):
+    answer: str
+    citations: list[str]
+    request_id: str
 
 
 class CorpusDocument(BaseModel):
@@ -65,7 +74,7 @@ def create_app(service: SecureService, *, secret: str, issuer: str, audience: st
 
     def current_principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> Principal:
         if credentials is None:
-            raise HTTPException(401, "invalid credentials")
+            raise HTTPException(401, "invalid credentials", headers=CHALLENGE)
         try:
             claims = jwt.decode(
                 credentials.credentials, secret, algorithms=["HS256"], issuer=issuer,
@@ -73,14 +82,14 @@ def create_app(service: SecureService, *, secret: str, issuer: str, audience: st
             )
             return principal_from_claims(claims)
         except (jwt.PyJWTError, ValueError):
-            raise HTTPException(401, "invalid credentials") from None
+            raise HTTPException(401, "invalid credentials", headers=CHALLENGE) from None
 
     app = FastAPI(title="Secure Multi-tenant RAG Demo")
 
     @app.post("/answer")
-    def answer(body: Question, principal: Principal = Depends(current_principal)) -> dict:
+    def answer(body: Question, principal: Principal = Depends(current_principal)) -> AnswerBody:
         result = service.answer(principal, body.question, str(uuid4()))
-        return {"answer": result.answer, "citations": list(result.citations), "request_id": result.request_id}
+        return AnswerBody(answer=result.answer, citations=list(result.citations), request_id=result.request_id)
 
     return app
 

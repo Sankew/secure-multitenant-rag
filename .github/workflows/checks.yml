@@ -18,4 +18,4 @@ jobs:
         with:
           python-version: "3.11"
       - run: uv run --locked --extra dev pytest -q
-      - run: uv run --locked python evaluation/adversarial.py
+      - run: uv run --locked --extra dev python evaluation/adversarial.py
