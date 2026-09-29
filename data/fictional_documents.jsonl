@@ -1,0 +1,4 @@
+{"document_id":"leave","text":"Acme staff receive twenty days of annual leave each year. Requests go through the HR portal.","tenant_id":"acme","allowed_roles":["staff"],"allowed_users":[],"classification":0}
+{"document_id":"pay","text":"Acme fictional pay bands are Level A at 70000 dollars and Level B at 95000 dollars.","tenant_id":"acme","allowed_roles":["hr"],"allowed_users":[],"classification":2}
+{"document_id":"leave","text":"Beacon staff receive twelve days of annual leave each year. Requests go to the operations lead.","tenant_id":"beacon","allowed_roles":["staff"],"allowed_users":[],"classification":0}
+{"document_id":"pay","text":"Beacon fictional pay bands are Grade 1 at 60000 dollars and Grade 2 at 82000 dollars.","tenant_id":"beacon","allowed_roles":["hr"],"allowed_users":[],"classification":2}

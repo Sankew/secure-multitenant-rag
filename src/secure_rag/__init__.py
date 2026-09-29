@@ -1,0 +1,1 @@
+"""Permission-aware retrieval demo."""
