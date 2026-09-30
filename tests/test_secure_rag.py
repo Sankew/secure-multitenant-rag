@@ -127,9 +127,13 @@ def test_user_grant_respects_tenant_clearance_and_revocation() -> None:
 
 def test_invalid_token_and_body_auth_fields_are_rejected() -> None:
     api, _ = client()
-    assert api.post("/answer", json={"question": "leave"}).status_code == 401
+    missing = api.post("/answer", json={"question": "leave"})
+    assert missing.status_code == 401
+    assert missing.headers["WWW-Authenticate"] == "Bearer"
     headers = {"Authorization": f"Bearer {token('alice', 'acme', ['staff'])}"}
     assert api.post("/answer", json={"question": "leave", "tenant_id": "beacon"}, headers=headers).status_code == 422
+    for blank in ("", "   ", "\n\t"):
+        assert api.post("/answer", json={"question": blank}, headers=headers).status_code == 422
 
 
 def test_wrong_signature_expiry_issuer_audience_algorithm_and_missing_claims() -> None:
@@ -146,10 +150,35 @@ def test_wrong_signature_expiry_issuer_audience_algorithm_and_missing_claims() -
         jwt.encode(valid, key="", algorithm="none"),
         jwt.encode({key: value for key, value in valid.items() if key != "roles"}, SECRET, algorithm="HS256"),
         jwt.encode({key: value for key, value in valid.items() if key != "clearance"}, SECRET, algorithm="HS256"),
+        jwt.encode(valid, SECRET + "-padding-for-hs512-key-length-requirements", algorithm="HS512"),
     ]
     for bad in bad_tokens:
         response = api.post("/answer", json={"question": "leave"}, headers={"Authorization": f"Bearer {bad}"})
         assert response.status_code == 401
+        assert response.headers["WWW-Authenticate"] == "Bearer"
+
+
+@pytest.mark.parametrize("claims", [
+    {"sub": ""}, {"tenant_id": ""}, {"roles": "staff"}, {"roles": ["staff", 1]},
+    {"clearance": True}, {"clearance": 2.0}, {"clearance": "2"}, {"clearance": -1},
+])
+def test_malformed_identity_claims_are_rejected(claims: dict) -> None:
+    api, _ = client()
+    valid = {
+        "sub": "alice", "tenant_id": "acme", "roles": ["staff"], "clearance": 0,
+        "iss": "test", "aud": "test-api", "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+    }
+    bad = jwt.encode({**valid, **claims}, SECRET, algorithm="HS256")
+    response = api.post("/answer", json={"question": "leave"}, headers={"Authorization": f"Bearer {bad}"})
+    assert response.status_code == 401
+
+
+def test_openapi_documents_the_answer_schema() -> None:
+    api, _ = client()
+    schema = api.get("/openapi.json").json()
+    response = schema["paths"]["/answer"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert response == {"$ref": "#/components/schemas/AnswerBody"}
+    assert set(schema["components"]["schemas"]["AnswerBody"]["required"]) == {"answer", "citations", "request_id"}
 
 
 def test_irrelevant_accessible_document_is_not_cited() -> None:

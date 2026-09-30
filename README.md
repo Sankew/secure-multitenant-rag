@@ -1,5 +1,7 @@
 # Permission-Aware Multi-Tenant RAG
 
+[![Checks](https://github.com/Sankew/secure-multitenant-rag/actions/workflows/checks.yml/badge.svg)](https://github.com/Sankew/secure-multitenant-rag/actions/workflows/checks.yml)
+
 A runnable prototype of retrieval with tenant, role, user, and classification checks. The sample documents describe two fictional companies. Answers quote one accessible source sentence and cite its document ID.
 
 ```mermaid
@@ -39,7 +41,7 @@ Document IDs are scoped by tenant, so both sample tenants can use local IDs such
 
 ## Adversarial evaluation
 
-The evaluation sends 12 questions for each of 12 tenant, role, and clearance combinations through the HTTP API. It also checks four fixed allowed cases, verifies access before revocation, and repeats 12 questions after revoking an Acme grant. The fixed fictional corpus produced **161 HTTP requests, zero unauthorized citations, zero false denials across five positive probes, and zero answer-format failures**. Run `uv run python evaluation/adversarial.py` to reproduce it. The positive probes are deliberately few; this is not a production security or answer-quality claim.
+The evaluation sends 12 questions for each of 12 tenant, role, and clearance combinations through the HTTP API. It also checks four fixed allowed cases, verifies access before revocation, and repeats 12 questions after revoking an Acme grant. The four-document fictional corpus produced **161 HTTP requests, zero unauthorized citations, zero false denials across five positive probes, and zero answer-format failures**. Run `uv run python evaluation/adversarial.py` to reproduce it. Five positive probes is a small sample, and this is not a production security audit.
 
 ## Limits
 
